@@ -1,4 +1,3 @@
 python-telegram-bot==20.7
-yt-dlp
-python-dotenv
-aiogram
+yt-dlp>=2023.12.0
+python-dotenv>=1.0.0
