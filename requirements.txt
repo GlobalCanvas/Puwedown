@@ -1,0 +1,4 @@
+python-dotenv
+aiogram==3.13.0  # или другая версия
+requests
+yt-dlp
