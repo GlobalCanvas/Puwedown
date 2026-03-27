@@ -2,4 +2,3 @@ python-dotenv
 python-telegram-bot
 requests
 yt_dlp
-flask
