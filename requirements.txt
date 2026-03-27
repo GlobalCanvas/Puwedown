@@ -1,4 +1,5 @@
 python-dotenv
-aiogram==3.13.0
+python-telegram-bot
 requests
 yt_dlp
+flask
