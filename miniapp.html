@@ -1,0 +1,1058 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1">
+<title>PuweDownloader</title>
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Raleway:wght@600;700;800;900&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0;}
+:root{
+  --bg:#080d1a;
+  --card:#0e1829;
+  --card2:#111f35;
+  --border:rgba(229,57,53,.14);
+  --border2:rgba(229,57,53,.35);
+  --blue:#e53935;
+  --blue2:#b71c1c;
+  --glow:rgba(229,57,53,.18);
+  --text:#e6edf3;
+  --muted:#7d8590;
+  --muted2:#4a5568;
+  --success:#3fb950;
+  --warn:#d29922;
+  --danger:#f85149;
+  --mono:'JetBrains Mono',monospace;
+  --sans:'Raleway',sans-serif;
+  --radius:14px;
+}
+
+html,body{height:100%;overflow:hidden;}
+body{
+  font-family:var(--sans);
+  background:var(--bg);
+  color:var(--text);
+  display:flex;
+  flex-direction:column;
+  min-height:100vh;
+  min-height:100dvh;
+}
+
+/* ── BACKGROUND ── */
+.bg-layer{
+  position:fixed;inset:0;z-index:0;pointer-events:none;
+  background:
+    radial-gradient(ellipse 80% 60% at 15% 10%, rgba(183,28,28,.10) 0%, transparent 55%),
+    radial-gradient(ellipse 60% 40% at 85% 80%, rgba(229,57,53,.07) 0%, transparent 50%);
+}
+.grid-bg{
+  position:fixed;inset:0;z-index:0;pointer-events:none;opacity:.025;
+  background-image:linear-gradient(rgba(229,57,53,.8) 1px,transparent 1px),linear-gradient(90deg,rgba(229,57,53,.8) 1px,transparent 1px);
+  background-size:40px 40px;
+}
+
+/* ── SCREENS ── */
+.screen{
+  position:fixed;inset:0;z-index:10;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  padding:20px;
+  opacity:0;pointer-events:none;
+  transition:opacity .3s ease, transform .3s ease;
+  transform:translateY(8px);
+  overflow-y:auto;
+}
+.screen.active{opacity:1;pointer-events:all;transform:translateY(0);}
+
+/* ── AUTH SCREEN ── */
+#screen-auth{gap:0;}
+.auth-logo{text-align:center;margin-bottom:32px;}
+.auth-logo-icon{
+  width:72px;height:72px;border-radius:20px;
+  background:linear-gradient(135deg,var(--blue2),var(--blue));
+  display:flex;align-items:center;justify-content:center;
+  font-size:2em;margin:0 auto 14px;
+  box-shadow:0 0 32px var(--glow);
+}
+.auth-logo-name{font-size:1.5em;font-weight:900;color:var(--blue);letter-spacing:-.02em;}
+.auth-logo-sub{font-size:.72em;font-family:var(--mono);color:var(--muted);margin-top:4px;}
+
+.auth-card{
+  width:100%;max-width:340px;
+  background:var(--card);
+  border:1.5px solid var(--border2);
+  border-radius:var(--radius);
+  padding:24px;
+}
+.tg-btn{
+  width:100%;padding:14px;
+  background:linear-gradient(135deg,#b71c1c,#e53935);
+  border:none;border-radius:10px;
+  color:#fff;font-family:var(--sans);font-size:.95em;font-weight:800;
+  cursor:pointer;display:flex;align-items:center;justify-content:center;gap:10px;
+  transition:transform .15s,box-shadow .15s;
+  box-shadow:0 4px 20px rgba(229,57,53,.3);
+}
+.tg-btn:hover{transform:translateY(-1px);box-shadow:0 6px 28px rgba(229,57,53,.4);}
+.tg-btn:active{transform:translateY(0);}
+.tg-btn svg{width:22px;height:22px;fill:#fff;}
+
+.auth-note{
+  font-size:.68em;font-family:var(--mono);color:var(--muted);
+  text-align:center;margin-top:14px;line-height:1.6;
+}
+.auth-note a{color:var(--blue);text-decoration:none;}
+
+/* ── MAIN APP SCREEN ── */
+#screen-app{
+  justify-content:flex-start;
+  padding:0;
+  overflow-y:auto;
+  -webkit-overflow-scrolling:touch;
+}
+.app-inner{
+  width:100%;max-width:480px;
+  margin:0 auto;
+  padding:16px 16px 100px;
+  display:flex;flex-direction:column;gap:14px;
+}
+
+/* ── TOP BAR ── */
+.topbar{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:14px 16px;
+  background:rgba(10,15,30,.9);
+  border-bottom:1px solid var(--border);
+  backdrop-filter:blur(12px);
+  position:sticky;top:0;z-index:50;
+  width:100%;max-width:480px;
+  margin:0 auto;
+}
+.topbar-logo{font-size:1em;font-weight:900;color:var(--blue);letter-spacing:-.01em;}
+.topbar-user{
+  display:flex;align-items:center;gap:8px;
+  font-size:.72em;font-family:var(--mono);color:var(--muted);
+}
+.topbar-avatar{
+  width:28px;height:28px;border-radius:50%;
+  background:linear-gradient(135deg,var(--blue2),var(--blue));
+  display:flex;align-items:center;justify-content:center;
+  font-size:.75em;font-weight:700;color:#fff;
+}
+.badge-premium{
+  background:linear-gradient(135deg,#b8860b,#ffd700);
+  color:#000;font-size:.6em;font-family:var(--mono);
+  padding:2px 6px;border-radius:4px;font-weight:700;
+}
+
+/* ── INPUT CARD ── */
+.input-card{
+  background:var(--card);
+  border:1.5px solid var(--border2);
+  border-radius:var(--radius);
+  padding:16px;
+}
+.input-label{
+  font-size:.65em;font-family:var(--mono);color:var(--muted);
+  letter-spacing:.1em;text-transform:uppercase;margin-bottom:8px;
+}
+.url-row{display:flex;gap:8px;}
+.url-input{
+  flex:1;padding:11px 14px;
+  background:rgba(255,255,255,.04);
+  border:1.5px solid var(--border);
+  border-radius:9px;color:var(--text);
+  font-size:.88em;font-family:var(--mono);outline:none;
+  transition:border .2s;
+  min-width:0;
+}
+.url-input:focus{border-color:var(--blue);}
+.url-input::placeholder{color:var(--muted2);}
+.go-btn{
+  padding:11px 16px;
+  background:linear-gradient(135deg,var(--blue2),var(--blue));
+  border:none;border-radius:9px;color:#fff;
+  font-family:var(--mono);font-size:.82em;font-weight:700;
+  cursor:pointer;white-space:nowrap;
+  transition:transform .15s,box-shadow .15s;
+  box-shadow:0 4px 16px rgba(229,57,53,.25);
+}
+.go-btn:hover{transform:translateY(-1px);}
+.go-btn:active{transform:scale(.97);}
+.go-btn:disabled{opacity:.5;cursor:default;transform:none;}
+
+.platforms-hint{
+  display:flex;gap:6px;flex-wrap:wrap;margin-top:10px;
+}
+.platform-tag{
+  font-size:.62em;font-family:var(--mono);color:var(--muted);
+  background:rgba(255,255,255,.04);border:1px solid var(--border);
+  border-radius:5px;padding:3px 8px;
+}
+
+/* ── VIDEO CARD ── */
+.video-card{
+  background:var(--card);
+  border:1.5px solid var(--border2);
+  border-radius:var(--radius);
+  overflow:hidden;
+  animation:slideIn .3s ease;
+}
+@keyframes slideIn{from{opacity:0;transform:translateY(12px);}to{opacity:1;transform:translateY(0);}}
+
+.video-preview-wrap{
+  position:relative;
+  background:#000;
+  width:100%;
+  aspect-ratio:16/9;
+  overflow:hidden;
+}
+.video-preview-wrap video{
+  width:100%;height:100%;object-fit:contain;
+  display:block;
+}
+.video-preview-wrap .thumb{
+  position:absolute;inset:0;
+  width:100%;height:100%;object-fit:cover;
+  transition:opacity .3s;
+}
+.video-preview-wrap .thumb.hidden{opacity:0;pointer-events:none;}
+.play-overlay{
+  position:absolute;inset:0;
+  display:flex;align-items:center;justify-content:center;
+  background:rgba(0,0,0,.35);
+  cursor:pointer;transition:opacity .2s;
+}
+.play-overlay:hover{background:rgba(0,0,0,.5);}
+.play-overlay.hidden{display:none;}
+.play-circle{
+  width:56px;height:56px;border-radius:50%;
+  background:rgba(229,57,53,.85);
+  display:flex;align-items:center;justify-content:center;
+  box-shadow:0 0 24px rgba(229,57,53,.5);
+}
+.play-circle svg{width:24px;height:24px;fill:#fff;margin-left:3px;}
+
+.duration-badge{
+  position:absolute;bottom:8px;right:8px;
+  background:rgba(0,0,0,.75);
+  font-size:.65em;font-family:var(--mono);color:#fff;
+  padding:2px 7px;border-radius:4px;
+}
+
+.video-info{padding:14px 16px;}
+.video-title{
+  font-size:.9em;font-weight:700;color:var(--text);
+  line-height:1.4;margin-bottom:6px;
+  display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;
+}
+.video-meta{
+  display:flex;gap:12px;
+  font-size:.65em;font-family:var(--mono);color:var(--muted);
+}
+.video-meta span{display:flex;align-items:center;gap:4px;}
+
+/* ── DOWNLOAD OPTIONS ── */
+.dl-section{padding:0 16px 16px;}
+.dl-label{
+  font-size:.62em;font-family:var(--mono);color:var(--muted);
+  letter-spacing:.1em;text-transform:uppercase;margin-bottom:10px;
+}
+.dl-tabs{
+  display:flex;gap:0;border:1px solid var(--border);border-radius:8px;overflow:hidden;
+  margin-bottom:12px;
+}
+.dl-tab{
+  flex:1;padding:8px;border:none;background:none;
+  color:var(--muted);font-family:var(--sans);font-size:.78em;font-weight:700;
+  cursor:pointer;transition:all .15s;
+}
+.dl-tab.active{background:rgba(229,57,53,.15);color:var(--blue);}
+
+.quality-grid{display:flex;flex-direction:column;gap:8px;}
+.quality-row{
+  display:flex;align-items:center;justify-content:space-between;
+  background:rgba(255,255,255,.03);
+  border:1px solid var(--border);
+  border-radius:9px;padding:10px 14px;
+  transition:border-color .15s,background .15s;
+}
+.quality-row:hover{border-color:var(--border2);background:rgba(229,57,53,.06);}
+.quality-info{display:flex;flex-direction:column;gap:2px;}
+.quality-name{font-size:.82em;font-weight:700;color:var(--text);}
+.quality-size{font-size:.62em;font-family:var(--mono);color:var(--muted);}
+.dl-btn{
+  padding:7px 16px;
+  background:linear-gradient(135deg,var(--blue2),var(--blue));
+  border:none;border-radius:7px;
+  color:#fff;font-family:var(--mono);font-size:.72em;font-weight:600;
+  cursor:pointer;
+  transition:transform .15s,box-shadow .15s;
+  box-shadow:0 2px 10px rgba(229,57,53,.25);
+  display:flex;align-items:center;gap:6px;white-space:nowrap;
+}
+.dl-btn:hover{transform:translateY(-1px);box-shadow:0 4px 16px rgba(229,57,53,.35);}
+.dl-btn:active{transform:scale(.97);}
+.dl-btn.loading{opacity:.7;cursor:default;}
+.dl-btn svg{width:13px;height:13px;fill:#fff;flex-shrink:0;}
+
+/* ── STATUS / PROGRESS ── */
+.status-card{
+  background:var(--card);border:1.5px solid var(--border);
+  border-radius:var(--radius);padding:20px;
+  text-align:center;
+}
+.status-spinner{
+  width:36px;height:36px;border-radius:50%;
+  border:3px solid var(--border);border-top-color:var(--blue);
+  animation:spin .8s linear infinite;
+  margin:0 auto 12px;
+}
+@keyframes spin{to{transform:rotate(360deg);}}
+.status-text{font-size:.82em;font-family:var(--mono);color:var(--muted);}
+.status-sub{font-size:.7em;font-family:var(--mono);color:var(--muted2);margin-top:4px;}
+
+/* ── TOAST ── */
+.toast{
+  position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(80px);
+  background:var(--card2);border:1px solid var(--border2);
+  border-radius:10px;padding:10px 18px;
+  font-size:.78em;font-family:var(--mono);color:var(--text);
+  z-index:999;transition:transform .3s ease,opacity .3s ease;
+  opacity:0;white-space:nowrap;
+  box-shadow:0 8px 32px rgba(0,0,0,.4);
+}
+.toast.show{transform:translateX(-50%) translateY(0);opacity:1;}
+.toast.success{border-color:var(--success);color:var(--success);}
+.toast.error{border-color:var(--danger);color:var(--danger);}
+
+/* ── SEARCH SECTION ── */
+.search-section{
+  background:var(--card);border:1.5px solid var(--border);
+  border-radius:var(--radius);padding:14px;
+}
+.search-tabs{display:flex;gap:8px;margin-bottom:12px;}
+.search-tab{
+  padding:6px 14px;border-radius:6px;border:1px solid var(--border);
+  background:none;color:var(--muted);font-family:var(--mono);font-size:.72em;font-weight:600;
+  cursor:pointer;transition:all .15s;
+}
+.search-tab.active{background:rgba(229,57,53,.15);color:var(--blue);border-color:var(--border2);}
+.search-row{display:flex;gap:8px;}
+.search-input{
+  flex:1;padding:9px 12px;
+  background:rgba(255,255,255,.04);border:1.5px solid var(--border);
+  border-radius:8px;color:var(--text);font-size:.82em;font-family:var(--mono);
+  outline:none;transition:border .2s;
+}
+.search-input:focus{border-color:var(--blue);}
+.search-btn{
+  padding:9px 14px;background:rgba(229,57,53,.15);border:1px solid var(--border2);
+  border-radius:8px;color:var(--blue);font-family:var(--mono);font-size:.78em;font-weight:600;
+  cursor:pointer;transition:all .15s;
+}
+.search-btn:hover{background:rgba(229,57,53,.25);}
+
+.search-results{display:flex;flex-direction:column;gap:8px;margin-top:12px;}
+.search-result-item{
+  display:flex;gap:10px;align-items:center;
+  background:rgba(255,255,255,.03);border:1px solid var(--border);border-radius:9px;
+  padding:10px;cursor:pointer;transition:border-color .15s,background .15s;
+}
+.search-result-item:hover{border-color:var(--border2);background:rgba(229,57,53,.06);}
+.sri-thumb{
+  width:72px;height:44px;border-radius:6px;object-fit:cover;
+  background:var(--card2);flex-shrink:0;
+}
+.sri-info{flex:1;min-width:0;}
+.sri-title{
+  font-size:.78em;font-weight:700;color:var(--text);
+  display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;
+  line-height:1.3;
+}
+.sri-meta{font-size:.62em;font-family:var(--mono);color:var(--muted);margin-top:3px;}
+.sri-dl-btn{
+  padding:6px 12px;background:rgba(229,57,53,.15);border:1px solid var(--border2);
+  border-radius:6px;color:var(--blue);font-family:var(--mono);font-size:.68em;font-weight:600;
+  cursor:pointer;white-space:nowrap;transition:all .15s;flex-shrink:0;
+}
+.sri-dl-btn:hover{background:rgba(229,57,53,.3);}
+
+/* ── LIMIT BAR ── */
+.limit-bar-wrap{
+  background:var(--card);border:1px solid var(--border);border-radius:10px;padding:12px 14px;
+}
+.limit-bar-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;}
+.limit-bar-label{font-size:.65em;font-family:var(--mono);color:var(--muted);}
+.limit-bar-val{font-size:.65em;font-family:var(--mono);color:var(--blue);font-weight:600;}
+.limit-bar-track{height:4px;background:rgba(255,255,255,.07);border-radius:2px;overflow:hidden;}
+.limit-bar-fill{height:100%;background:linear-gradient(90deg,var(--blue2),var(--blue));border-radius:2px;transition:width .5s ease;}
+
+/* ── SECTION TITLE ── */
+.section-title{
+  font-size:.65em;font-family:var(--mono);color:var(--muted);
+  letter-spacing:.1em;text-transform:uppercase;
+  display:flex;align-items:center;gap:8px;
+}
+.section-title::after{content:'';flex:1;height:1px;background:var(--border);}
+
+/* ── EMPTY STATE ── */
+.empty-state{
+  text-align:center;padding:32px 20px;
+  font-size:.78em;font-family:var(--mono);color:var(--muted2);
+  line-height:2;
+}
+.empty-icon{font-size:2em;margin-bottom:8px;opacity:.4;}
+
+/* ── SCROLLBAR ── */
+::-webkit-scrollbar{width:4px;}
+::-webkit-scrollbar-track{background:transparent;}
+::-webkit-scrollbar-thumb{background:var(--border2);border-radius:2px;}
+</style>
+</head>
+<body>
+
+<div class="bg-layer"></div>
+<div class="grid-bg"></div>
+
+<!-- ═══════════════ AUTH SCREEN ═══════════════ -->
+<div class="screen active" id="screen-auth">
+  <div class="auth-logo">
+    <div class="auth-logo-icon"><img src="avatar.png" style="width:48px;height:48px;border-radius:12px;object-fit:cover;"></div>
+    <div class="auth-logo-name">PuweDownloader</div>
+    <div class="auth-logo-sub">// video downloader mini app</div>
+  </div>
+  <div class="auth-card">
+    <button class="tg-btn" id="tg-login-btn" onclick="loginWithTelegram()">
+      <svg viewBox="0 0 24 24"><path d="M11.944 0A12 12 0 0 0 0 12a12 12 0 0 0 12 12 12 12 0 0 0 12-12A12 12 0 0 0 12 0a12 12 0 0 0-.056 0zm4.962 7.224c.1-.002.321.023.465.14a.506.506 0 0 1 .171.325c.016.093.036.306.02.472-.18 1.898-.962 6.502-1.36 8.627-.168.9-.499 1.201-.82 1.23-.696.065-1.225-.46-1.9-.902-1.056-.693-1.653-1.124-2.678-1.8-1.185-.78-.417-1.21.258-1.91.177-.184 3.247-2.977 3.307-3.23.007-.032.014-.15-.056-.212s-.174-.041-.249-.024c-.106.024-1.793 1.14-5.061 3.345-.48.33-.913.49-1.302.48-.428-.008-1.252-.241-1.865-.44-.752-.245-1.349-.374-1.297-.789.027-.216.325-.437.893-.663 3.498-1.524 5.83-2.529 6.998-3.014 3.332-1.386 4.025-1.627 4.476-1.635z"/></svg>
+      Войти через Telegram
+    </button>
+    <div class="auth-note">
+      Авторизация через официальный Telegram Login.<br>
+      Данные не хранятся на сторонних серверах.<br><br>
+      <a href="#">@PuweDownloaderBot</a>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════ APP SCREEN ═══════════════ -->
+<div class="screen" id="screen-app">
+
+  <!-- TOP BAR -->
+  <div class="topbar" id="topbar">
+    <div class="topbar-logo"><img src="avatar.png" style="width:20px;height:20px;border-radius:4px;object-fit:cover;vertical-align:middle;margin-right:5px;"> Puwe</div>
+    <div class="topbar-user">
+      <div class="topbar-avatar" id="user-avatar">?</div>
+      <span id="user-name">...</span>
+      <span class="badge-premium" id="premium-badge" style="display:none">👑</span>
+    </div>
+  </div>
+
+  <div class="app-inner">
+
+    <!-- URL INPUT -->
+    <div class="input-card">
+      <div class="input-label">// вставь ссылку на видео</div>
+      <div class="url-row">
+        <input class="url-input" id="url-input" type="url" placeholder="https://..." autocomplete="off" autocorrect="off" spellcheck="false">
+        <button class="go-btn" id="go-btn" onclick="handleUrl()">Анализ</button>
+      </div>
+      <div class="platforms-hint">
+        <span class="platform-tag">YouTube</span>
+        <span class="platform-tag">TikTok</span>
+        <span class="platform-tag">Instagram</span>
+        <span class="platform-tag">Twitter/X</span>
+        <span class="platform-tag">VK</span>
+        <span class="platform-tag">+500 сайтов</span>
+      </div>
+    </div>
+
+    <!-- STATUS -->
+    <div id="status-card" style="display:none" class="status-card">
+      <div class="status-spinner"></div>
+      <div class="status-text" id="status-text">Анализирую ссылку…</div>
+      <div class="status-sub" id="status-sub"></div>
+    </div>
+
+    <!-- VIDEO CARD -->
+    <div id="video-card" style="display:none" class="video-card">
+      <div class="video-preview-wrap">
+        <img class="thumb" id="video-thumb" src="" alt="">
+        <video id="video-player" preload="metadata" controls playsinline style="display:none;"></video>
+        <div class="play-overlay" id="play-overlay" onclick="togglePlay()">
+          <div class="play-circle">
+            <svg viewBox="0 0 24 24"><polygon points="5,3 19,12 5,21"/></svg>
+          </div>
+        </div>
+        <div class="duration-badge" id="duration-badge"></div>
+      </div>
+      <div class="video-info">
+        <div class="video-title" id="video-title">—</div>
+        <div class="video-meta">
+          <span id="video-platform">—</span>
+          <span id="video-views"></span>
+        </div>
+      </div>
+
+      <!-- DOWNLOAD OPTIONS -->
+      <div class="dl-section">
+        <div class="dl-label">// скачать</div>
+        <div class="dl-tabs">
+          <button class="dl-tab active" onclick="switchDlTab('video', this)"><img src="avatar.png" style="width:14px;height:14px;border-radius:2px;object-fit:cover;vertical-align:middle;"> Видео</button>
+          <button class="dl-tab" onclick="switchDlTab('audio', this)">🎵 Аудио</button>
+        </div>
+        <div class="quality-grid" id="quality-grid">
+          <!-- filled by JS -->
+        </div>
+      </div>
+    </div>
+
+    <!-- SEARCH SECTION -->
+    <div class="section-title">поиск</div>
+    <div class="search-section">
+      <div class="search-tabs">
+        <button class="search-tab active" onclick="setSearchPlatform('yt', this)">▶ YouTube</button>
+        <button class="search-tab" onclick="setSearchPlatform('tt', this)">♪ TikTok</button>
+      </div>
+      <div class="search-row">
+        <input class="search-input" id="search-input" placeholder="поиск видео…" onkeydown="if(event.key==='Enter')doSearch()">
+        <button class="search-btn" onclick="doSearch()">🔍</button>
+      </div>
+      <div class="search-results" id="search-results">
+        <div class="empty-state">
+          <div class="empty-icon">🔍</div>
+          Введи запрос для поиска
+        </div>
+      </div>
+    </div>
+
+    <!-- DAILY LIMIT -->
+    <div class="limit-bar-wrap" id="limit-bar" style="display:none">
+      <div class="limit-bar-top">
+        <div class="limit-bar-label">// лимит скачиваний через поиск</div>
+        <div class="limit-bar-val" id="limit-val">0/3</div>
+      </div>
+      <div class="limit-bar-track"><div class="limit-bar-fill" id="limit-fill" style="width:0%"></div></div>
+    </div>
+
+  </div><!-- /app-inner -->
+</div>
+
+<!-- TOAST -->
+<div class="toast" id="toast"></div>
+
+<script>
+// ══════════════════════════════════════════
+//  CONFIG — замени под свой бэкенд
+// ══════════════════════════════════════════
+const API_BASE = '/api';        // твой Flask/FastAPI бэкенд
+const BOT_USERNAME = 'PuweDownloaderBot';
+
+// ══════════════════════════════════════════
+//  TELEGRAM MINI APP INIT
+// ══════════════════════════════════════════
+const tg = window.Telegram?.WebApp;
+if (tg) {
+  tg.ready();
+  tg.expand();
+  tg.setHeaderColor('#080d1a');
+  tg.setBackgroundColor('#080d1a');
+}
+
+// ══════════════════════════════════════════
+//  STATE
+// ══════════════════════════════════════════
+let appState = {
+  user: null,
+  token: null,
+  videoInfo: null,
+  dlMode: 'video',
+  searchPlatform: 'yt',
+  searchDlUsed: 0,
+  searchDlLimit: 3,
+};
+
+// ══════════════════════════════════════════
+//  INIT
+// ══════════════════════════════════════════
+(async function init() {
+  // Если открыто из Telegram Mini App — auto auth через initData
+  if (tg?.initDataUnsafe?.user) {
+    const tgUser = tg.initDataUnsafe.user;
+    try {
+      const r = await api('/auth/telegram', 'POST', {
+        init_data: tg.initData,
+      });
+      if (r?.ok) {
+        appState.token = r.token;
+        appState.user = r.user;
+        setUser(r.user);
+        showScreen('app');
+        loadLimits();
+        return;
+      }
+    } catch(e) {}
+  }
+
+  // Иначе проверяем localStorage
+  const saved = localStorage.getItem('pw_token');
+  if (saved) {
+    try {
+      const r = await api('/auth/me', 'GET', null, saved);
+      if (r?.ok) {
+        appState.token = saved;
+        appState.user = r.user;
+        setUser(r.user);
+        showScreen('app');
+        loadLimits();
+        return;
+      }
+    } catch(e) {}
+    localStorage.removeItem('pw_token');
+  }
+
+  showScreen('auth');
+})();
+
+// ══════════════════════════════════════════
+//  AUTH
+// ══════════════════════════════════════════
+function loginWithTelegram() {
+  // Если уже в Mini App — нет смысла
+  if (tg?.initDataUnsafe?.user) return;
+
+  // Telegram Login Widget fallback
+  const btn = document.getElementById('tg-login-btn');
+  btn.disabled = true;
+  btn.textContent = '⏳ Открываю Telegram…';
+
+  // Открываем бота и просим /start webapp
+  window.open(`https://t.me/${BOT_USERNAME}?start=webapp`, '_blank');
+
+  // Polling для получения токена через бота
+  let tries = 0;
+  const poll = setInterval(async () => {
+    tries++;
+    if (tries > 60) { clearInterval(poll); btn.disabled = false; btn.innerHTML = `<svg viewBox="0 0 24 24"><path d="M11.944 0A12 12 0 0 0 0 12a12 12 0 0 0 12 12 12 12 0 0 0 12-12A12 12 0 0 0 12 0a12 12 0 0 0-.056 0zm4.962 7.224c.1-.002.321.023.465.14a.506.506 0 0 1 .171.325c.016.093.036.306.02.472-.18 1.898-.962 6.502-1.36 8.627-.168.9-.499 1.201-.82 1.23-.696.065-1.225-.46-1.9-.902-1.056-.693-1.653-1.124-2.678-1.8-1.185-.78-.417-1.21.258-1.91.177-.184 3.247-2.977 3.307-3.23.007-.032.014-.15-.056-.212s-.174-.041-.249-.024c-.106.024-1.793 1.14-5.061 3.345-.48.33-.913.49-1.302.48-.428-.008-1.252-.241-1.865-.44-.752-.245-1.349-.374-1.297-.789.027-.216.325-.437.893-.663 3.498-1.524 5.83-2.529 6.998-3.014 3.332-1.386 4.025-1.627 4.476-1.635z"/></svg> Войти через Telegram`; return; }
+    const pending = localStorage.getItem('pw_pending_token');
+    if (pending) {
+      clearInterval(poll);
+      localStorage.removeItem('pw_pending_token');
+      localStorage.setItem('pw_token', pending);
+      appState.token = pending;
+      const r = await api('/auth/me');
+      if (r?.ok) { appState.user = r.user; setUser(r.user); showScreen('app'); loadLimits(); }
+    }
+  }, 1500);
+}
+
+// ══════════════════════════════════════════
+//  USER UI
+// ══════════════════════════════════════════
+function setUser(user) {
+  const name = user.first_name || user.username || 'Гость';
+  document.getElementById('user-name').textContent = name;
+  document.getElementById('user-avatar').textContent = name[0].toUpperCase();
+  if (user.is_premium) {
+    document.getElementById('premium-badge').style.display = '';
+    appState.searchDlLimit = 12;
+  } else {
+    appState.searchDlLimit = 3;
+  }
+}
+
+function showScreen(name) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById(`screen-${name}`).classList.add('active');
+}
+
+// ══════════════════════════════════════════
+//  API HELPER
+// ══════════════════════════════════════════
+async function api(path, method = 'GET', body = null, token = null) {
+  const tok = token || appState.token;
+  const opts = {
+    method,
+    headers: {
+      'Content-Type': 'application/json',
+      ...(tok ? { 'X-Token': tok } : {}),
+    },
+  };
+  if (body) opts.body = JSON.stringify(body);
+  const r = await fetch(API_BASE + path, opts);
+  return r.json();
+}
+
+// ══════════════════════════════════════════
+//  URL HANDLER
+// ══════════════════════════════════════════
+async function handleUrl() {
+  const url = document.getElementById('url-input').value.trim();
+  if (!url || !url.startsWith('http')) { toast('Вставь корректную ссылку', 'error'); return; }
+
+  const btn = document.getElementById('go-btn');
+  btn.disabled = true;
+  document.getElementById('video-card').style.display = 'none';
+
+  showStatus('🔍 Анализирую ссылку…', url);
+
+  try {
+    const data = await api('/info', 'POST', { url });
+    if (!data?.ok) throw new Error(data?.error || 'Ошибка');
+    renderVideo(data);
+  } catch(e) {
+    hideStatus();
+    toast('Не удалось получить данные: ' + e.message, 'error');
+  }
+
+  btn.disabled = false;
+}
+
+document.getElementById('url-input').addEventListener('keydown', e => {
+  if (e.key === 'Enter') handleUrl();
+});
+
+// ══════════════════════════════════════════
+//  VIDEO RENDER
+// ══════════════════════════════════════════
+function renderVideo(data) {
+  appState.videoInfo = data;
+  hideStatus();
+
+  // Thumb / player
+  const thumb = document.getElementById('video-thumb');
+  const player = document.getElementById('video-player');
+  const overlay = document.getElementById('play-overlay');
+
+  if (data.thumbnail) {
+    thumb.src = data.thumbnail;
+    thumb.classList.remove('hidden');
+    thumb.style.display = '';
+    player.style.display = 'none';
+    overlay.classList.remove('hidden');
+  }
+
+  // Duration
+  const dur = document.getElementById('duration-badge');
+  dur.textContent = data.duration_str || '';
+
+  // Info
+  document.getElementById('video-title').textContent = data.title || 'Без названия';
+  document.getElementById('video-platform').textContent = '📍 ' + (data.extractor || 'Unknown');
+  const views = data.view_count;
+  if (views) {
+    let vs = views >= 1e6 ? (views/1e6).toFixed(1)+'M 👁' : views >= 1e3 ? Math.floor(views/1e3)+'K 👁' : views+' 👁';
+    document.getElementById('video-views').textContent = vs;
+  }
+
+  // Pre-load video for preview (low quality stream if available)
+  if (data.preview_url) {
+    player.src = data.preview_url;
+  }
+
+  renderQualities('video');
+  document.getElementById('video-card').style.display = '';
+}
+
+function togglePlay() {
+  const player = document.getElementById('video-player');
+  const thumb = document.getElementById('video-thumb');
+  const overlay = document.getElementById('play-overlay');
+
+  const info = appState.videoInfo;
+  if (!info?.preview_url && !info?.formats) return;
+
+  // First time — load player
+  if (!player.src && info.preview_url) {
+    player.src = info.preview_url;
+  } else if (!player.src && info.formats?.length) {
+    // Pick lowest quality for preview
+    const f = info.formats.filter(f => f.url && f.height).sort((a,b) => a.height - b.height)[0];
+    if (f) player.src = f.url;
+  }
+
+  thumb.classList.add('hidden');
+  setTimeout(() => { thumb.style.display = 'none'; }, 300);
+  player.style.display = '';
+  overlay.classList.add('hidden');
+  player.play();
+}
+
+// ══════════════════════════════════════════
+//  QUALITIES
+// ══════════════════════════════════════════
+function switchDlTab(mode, el) {
+  appState.dlMode = mode;
+  document.querySelectorAll('.dl-tab').forEach(t => t.classList.remove('active'));
+  el.classList.add('active');
+  renderQualities(mode);
+}
+
+function renderQualities(mode) {
+  const grid = document.getElementById('quality-grid');
+  const info = appState.videoInfo;
+  if (!info) return;
+  grid.innerHTML = '';
+
+  if (mode === 'audio') {
+    // Audio option
+    const row = makeQualityRow('MP3 Аудио', 'Лучшее качество', 'bestaudio', null, '🎵');
+    grid.appendChild(row);
+    return;
+  }
+
+  // Video formats
+  const fmts = (info.formats || [])
+    .filter(f => f.height && f.height >= 144)
+    .sort((a, b) => b.height - a.height);
+
+  const seen = new Set();
+  fmts.forEach(f => {
+    if (seen.has(f.height)) return;
+    seen.add(f.height);
+    const size = f.filesize ? formatSize(f.filesize) : '';
+    const row = makeQualityRow(`${f.height}p`, size || f.format_note || '', f.format_id, f.url, '🎬');
+    grid.appendChild(row);
+  });
+
+  if (seen.size === 0) {
+    const row = makeQualityRow('Лучшее качество', '', 'best', null, '🎬');
+    grid.appendChild(row);
+  }
+}
+
+function makeQualityRow(name, size, fmtId, directUrl, icon) {
+  const row = document.createElement('div');
+  row.className = 'quality-row';
+  row.innerHTML = `
+    <div class="quality-info">
+      <div class="quality-name">${icon} ${name}</div>
+      ${size ? `<div class="quality-size">${size}</div>` : ''}
+    </div>
+    <button class="dl-btn" onclick="startDownload('${fmtId}', '${name}', ${directUrl ? `'${directUrl}'` : 'null'}, this)">
+      <svg viewBox="0 0 24 24"><path d="M12 15l-5-5h3V4h4v6h3l-5 5zm-7 4h14v-2H5v2z"/></svg>
+      Скачать
+    </button>
+  `;
+  return row;
+}
+
+// ══════════════════════════════════════════
+//  DOWNLOAD
+// ══════════════════════════════════════════
+async function startDownload(fmtId, label, directUrl, btn) {
+  const info = appState.videoInfo;
+  if (!info) return;
+
+  btn.classList.add('loading');
+  btn.innerHTML = `<svg viewBox="0 0 24 24"><path d="M12 15l-5-5h3V4h4v6h3l-5 5zm-7 4h14v-2H5v2z"/></svg> Готовлю…`;
+
+  try {
+    // Если есть прямой URL — качаем напрямую (быстрый путь)
+    if (directUrl && fmtId !== 'bestaudio') {
+      triggerDownload(directUrl, `puwe_${fmtId}.mp4`);
+      toast('⬇️ Скачивание начато!', 'success');
+      btn.classList.remove('loading');
+      btn.innerHTML = `<svg viewBox="0 0 24 24"><path d="M12 15l-5-5h3V4h4v6h3l-5 5zm-7 4h14v-2H5v2z"/></svg> ${label}`;
+      // Очищаем плеер после скачивания
+      setTimeout(() => clearVideoCard(), 2000);
+      return;
+    }
+
+    // Иначе — через бэкенд
+    const r = await api('/download', 'POST', {
+      url: info.url,
+      format_id: fmtId,
+      mode: appState.dlMode,
+    });
+
+    if (!r?.ok) throw new Error(r?.error || 'Ошибка сервера');
+
+    triggerDownload(r.download_url, r.filename || 'video.mp4');
+    toast('⬇️ Скачивание начато!', 'success');
+
+    // Автоудаление файла с сервера
+    if (r.file_id) {
+      setTimeout(() => api('/delete/' + r.file_id, 'DELETE'), 30000);
+    }
+
+    // Очищаем карточку
+    setTimeout(() => clearVideoCard(), 2500);
+
+  } catch(e) {
+    toast('Ошибка: ' + e.message, 'error');
+  }
+
+  btn.classList.remove('loading');
+  btn.innerHTML = `<svg viewBox="0 0 24 24"><path d="M12 15l-5-5h3V4h4v6h3l-5 5zm-7 4h14v-2H5v2z"/></svg> ${label}`;
+}
+
+function triggerDownload(url, filename) {
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = filename;
+  a.target = '_blank';
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+}
+
+function clearVideoCard() {
+  const player = document.getElementById('video-player');
+  player.pause();
+  player.src = '';
+  document.getElementById('url-input').value = '';
+  document.getElementById('video-card').style.display = 'none';
+  appState.videoInfo = null;
+}
+
+// ══════════════════════════════════════════
+//  SEARCH
+// ══════════════════════════════════════════
+function setSearchPlatform(p, el) {
+  appState.searchPlatform = p;
+  document.querySelectorAll('.search-tab').forEach(t => t.classList.remove('active'));
+  el.classList.add('active');
+}
+
+async function doSearch() {
+  const q = document.getElementById('search-input').value.trim();
+  if (!q) return;
+
+  const res = document.getElementById('search-results');
+  res.innerHTML = `<div class="status-card"><div class="status-spinner"></div><div class="status-text">Ищу "${q}"…</div></div>`;
+
+  try {
+    const data = await api('/search', 'POST', {
+      query: q,
+      platform: appState.searchPlatform,
+    });
+
+    if (!data?.results?.length) {
+      res.innerHTML = `<div class="empty-state"><div class="empty-icon">😕</div>Ничего не найдено</div>`;
+      return;
+    }
+
+    res.innerHTML = '';
+    data.results.forEach(item => {
+      const el = document.createElement('div');
+      el.className = 'search-result-item';
+      el.innerHTML = `
+        ${item.thumbnail ? `<img class="sri-thumb" src="${item.thumbnail}" onerror="this.style.display='none'">` : `<div class="sri-thumb"></div>`}
+        <div class="sri-info">
+          <div class="sri-title">${escHtml(item.title)}</div>
+          <div class="sri-meta">${item.duration ? '⏱ '+item.duration : ''} ${item.views ? '  '+item.views : ''}</div>
+        </div>
+        <button class="sri-dl-btn" onclick="searchDownload('${encodeURIComponent(item.url)}', this)">⬇️</button>
+      `;
+      res.appendChild(el);
+    });
+
+    updateLimitBar(data.used, data.limit);
+
+  } catch(e) {
+    res.innerHTML = `<div class="empty-state"><div class="empty-icon">❌</div>${e.message}</div>`;
+  }
+}
+
+async function searchDownload(encodedUrl, btn) {
+  const used = appState.searchDlUsed;
+  const limit = appState.searchDlLimit;
+  if (used >= limit) {
+    toast(`Лимит ${limit}/день исчерпан. Приходи завтра!`, 'error');
+    return;
+  }
+
+  btn.textContent = '⏳';
+  btn.disabled = true;
+
+  try {
+    const url = decodeURIComponent(encodedUrl);
+    const r = await api('/search-download', 'POST', { url });
+    if (!r?.ok) throw new Error(r?.error || 'Ошибка');
+
+    triggerDownload(r.download_url, r.filename || 'video.mp4');
+    toast('⬇️ Скачивание начато!', 'success');
+
+    appState.searchDlUsed++;
+    updateLimitBar(appState.searchDlUsed, limit);
+
+    if (r.file_id) setTimeout(() => api('/delete/' + r.file_id, 'DELETE'), 30000);
+
+  } catch(e) {
+    toast('Ошибка: ' + e.message, 'error');
+    btn.textContent = '⬇️';
+    btn.disabled = false;
+  }
+}
+
+// ══════════════════════════════════════════
+//  LIMITS
+// ══════════════════════════════════════════
+async function loadLimits() {
+  try {
+    const r = await api('/limits');
+    if (r?.ok) {
+      appState.searchDlUsed = r.used || 0;
+      appState.searchDlLimit = r.limit || 3;
+      updateLimitBar(r.used, r.limit);
+    }
+  } catch(e) {}
+}
+
+function updateLimitBar(used, limit) {
+  if (!limit) return;
+  appState.searchDlUsed = used;
+  const bar = document.getElementById('limit-bar');
+  bar.style.display = '';
+  document.getElementById('limit-val').textContent = `${used}/${limit}`;
+  const pct = Math.min(100, (used / limit) * 100);
+  const fill = document.getElementById('limit-fill');
+  fill.style.width = pct + '%';
+  fill.style.background = pct >= 100 ? 'var(--danger)' : pct >= 70 ? 'var(--warn)' : 'linear-gradient(90deg,var(--blue2),var(--blue))';
+}
+
+// ══════════════════════════════════════════
+//  HELPERS
+// ══════════════════════════════════════════
+function showStatus(text, sub) {
+  document.getElementById('status-text').textContent = text;
+  document.getElementById('status-sub').textContent = sub || '';
+  document.getElementById('status-card').style.display = '';
+}
+function hideStatus() {
+  document.getElementById('status-card').style.display = 'none';
+}
+
+function toast(msg, type = '') {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.className = 'toast' + (type ? ' ' + type : '');
+  el.classList.add('show');
+  clearTimeout(el._t);
+  el._t = setTimeout(() => el.classList.remove('show'), 2800);
+}
+
+function formatSize(bytes) {
+  if (!bytes) return '';
+  if (bytes > 1e9) return (bytes/1e9).toFixed(1) + ' GB';
+  if (bytes > 1e6) return (bytes/1e6).toFixed(0) + ' MB';
+  return (bytes/1e3).toFixed(0) + ' KB';
+}
+
+function escHtml(s) {
+  return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+// Paste from clipboard on focus
+document.getElementById('url-input').addEventListener('focus', async () => {
+  try {
+    const txt = await navigator.clipboard.readText();
+    if (txt.startsWith('http') && !document.getElementById('url-input').value) {
+      document.getElementById('url-input').value = txt;
+    }
+  } catch(e) {}
+});
+</script>
+</body>
+</html>
