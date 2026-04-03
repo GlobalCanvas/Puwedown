@@ -1,0 +1,28 @@
+# Environment
+.env
+
+# Database
+*.db
+*.db-wal
+*.db-shm
+
+# Downloads
+webapp_dl/
+downloads/
+
+# Login tokens
+login_tokens.json
+
+# Go build artifacts
+*.exe
+*.test
+*.out
+/puwedownloader
+
+# Logs
+*.log
+
+# IDE
+.idea/
+.vscode/
+*.swp
