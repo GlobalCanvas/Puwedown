@@ -1,0 +1,20 @@
+{
+  "name": "puwe-downloader",
+  "version": "2.0.0",
+  "description": "PuweDownloader — video downloader webapp + Telegram bot",
+  "scripts": {
+    "server": "node server.js",
+    "bot":    "node bot.js",
+    "start":  "node server.js & node bot.js"
+  },
+  "dependencies": {
+    "better-sqlite3":        "^9.4.3",
+    "dotenv":                "^16.4.5",
+    "express":               "^4.19.2",
+    "node-telegram-bot-api": "^0.66.0",
+    "uuid":                  "^9.0.1"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}
